@@ -91,6 +91,7 @@ class TestScheduler(unittest.TestCase):
         Amount(5, Time.SECONDS),
         "/etc/mysos/admin_keyfile.yml",
         scheduler_key)
+
     scheduler1.registered(self._driver, self._framework_id, object())
     scheduler1.create_cluster("cluster1", "mysql_user", 3)
     scheduler1.resourceOffers(self._driver, [self._offer])
@@ -118,15 +119,25 @@ class TestScheduler(unittest.TestCase):
         "/etc/mysos/admin_keyfile.yml",
         scheduler_key)
 
+    RootMetrics().register_observable('scheduler', scheduler2)
+
     # Scheduler always receives registered() with the same FrameworkID after failover.
     scheduler2.registered(self._driver, self._framework_id, object())
 
     assert len(scheduler2._launchers) == 1
     assert scheduler2._launchers["cluster1"].cluster_name == "cluster1"
 
+    assert RootMetrics().sample()['scheduler.cluster_count'] == 1
+
     # Scheduler has recovered the cluster so it doesn't accept another of the same name.
     with pytest.raises(MysosScheduler.ClusterExists):
       scheduler2.create_cluster("cluster1", "mysql_user", 3)
+
+    # Simulate a master failover which verifies that the scheduler doesn't recover again
+    # (otherwise the cluster count would have increased by 1).
+    scheduler1.registered(self._driver, self._framework_id, object())
+
+    assert RootMetrics().sample()['scheduler.cluster_count'] == 1
 
   def test_scheduler_recovery_failure_before_launch(self):
     scheduler_key = gen_encryption_key()

@@ -127,6 +127,8 @@ class MysosScheduler(mesos.interface.Scheduler, Observable):
                                         # Mesos. The scheduler tolerates later disconnections.
     self._setup_metrics()
 
+    self._recovered = False  # Used to make sure recovery only happens once.
+
   def _setup_metrics(self):
     self._metrics = self.Metrics()
 
@@ -342,7 +344,12 @@ class MysosScheduler(mesos.interface.Scheduler, Observable):
       # driver is connecting and proceed to recover all the internal state objects after the driver
       # is connected.
       try:
-        self._recover()
+        # Only recover once.
+        # NOTE: Before https://issues.apache.org/jira/browse/MESOS-2910 registered() could be called
+        #       when the *scheduler* reconnects to failed over Mesos master, in which case we don't
+        #       want the scheduler to recover again.
+        if not self._recovered:
+          self._recover()
       except Exception as e:
         log.error("Stopping scheduler because: %s" % e)
         log.error(traceback.format_exc())
@@ -408,6 +415,7 @@ class MysosScheduler(mesos.interface.Scheduler, Observable):
           self._metrics.total_requested_disk_mb.read() + cluster_info.total_disk_mb)
 
     log.info("Recovered %s clusters" % len(self._launchers))
+    self._recovered = True
 
   @logged
   def reregistered(self, driver, masterInfo):
