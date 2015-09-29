@@ -4,17 +4,25 @@
 
 # Install dependencies.
 export DEBIAN_FRONTEND=noninteractive
+
+# Setup Mesos repository provided by Mesosphere.
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv E56151BF
+DISTRO=$(lsb_release -is | tr '[:upper:]' '[:lower:]')
+CODENAME=$(lsb_release -cs)
+echo "deb http://repos.mesosphere.io/${DISTRO} ${CODENAME} main" | \
+  sudo tee /etc/apt/sources.list.d/mesosphere.list
+
 aptitude update -q
 aptitude install -q -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
-    curl \  # We use curl --silent to download pakcages.
-    libcurl3-dev \  # Mesos requirement.
-    libsasl2-dev \  # Mesos requirement.
+    curl \
     python-dev \
     zookeeper \
     mysql-server-5.6 \
     libmysqlclient-dev \
     python-virtualenv \
-    libffi-dev  # For pynacl.
+    libffi-dev \
+    python-wheel \
+    mesos
 
 # Fix up Ubuntu mysql-server-5.6 issue: mysql_install_db looks for this file even if we don't need
 # it.
@@ -38,19 +46,13 @@ EOF
 chmod +x /usr/local/bin/update-mysos
 sudo -u vagrant update-mysos
 
-# Install Mesos.
-MESOS_VERSION=0.20.1
+# Build Mesos wheel.
+MESOS_VERSION=0.24.0
 UBUNTU_YEAR=14
 UBUNTU_MONTH=04
 
 mkdir -p /home/vagrant/mysos/deps
 pushd /home/vagrant/mysos/deps
-if [ ! -f mesos_${MESOS_VERSION}-1.0.ubuntu${UBUNTU_YEAR}${UBUNTU_MONTH}_amd64.deb ]; then
-    curl --silent --output mesos_${MESOS_VERSION}-1.0.ubuntu${UBUNTU_YEAR}${UBUNTU_MONTH}_amd64.deb \
-        http://downloads.mesosphere.io/master/ubuntu/${UBUNTU_YEAR}.${UBUNTU_MONTH}/mesos_${MESOS_VERSION}-1.0.ubuntu${UBUNTU_YEAR}${UBUNTU_MONTH}_amd64.deb
-    dpkg --install --force-confdef --force-confold \
-        /home/vagrant/mysos/deps/mesos_${MESOS_VERSION}-1.0.ubuntu${UBUNTU_YEAR}${UBUNTU_MONTH}_amd64.deb
-fi
 
 if [ ! -f mesos.native-${MESOS_VERSION}-cp27-none-linux_x86_64.whl ]; then
     # NOTE: We rename the output file here so the egg is properly named.
