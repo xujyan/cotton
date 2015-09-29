@@ -21,7 +21,7 @@ $TMPDIR/bin/mysos_scheduler \
     --port=$API_PORT \
     --framework_user=vagrant \
     --mesos_master=zk://$ZK_HOST:2181/mesos/master \
-    --executor_uri=/home/vagrant/mysos/dist/mysos-0.1.0-dev0.zip \
+    --executor_uri=/home/vagrant/mysos/dist/mysos-0.1.0-dev1.zip \
     --executor_cmd=/home/vagrant/mysos/vagrant/bin/mysos_executor.sh \
     --zk_url=zk://$ZK_HOST:2181/mysos \
     --admin_keypath=/home/vagrant/mysos/vagrant/etc/admin_keyfile.yml \

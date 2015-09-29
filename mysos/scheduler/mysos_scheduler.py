@@ -301,12 +301,14 @@ def proxy_main():
           scheduler,
           framework_info,
           options.mesos_master,
+          True,  # Necessary, see MESOS-3546.
           cred)
     else:
       scheduler_driver = mesos.native.MesosSchedulerDriver(
           scheduler,
           framework_info,
-          options.mesos_master)
+          options.mesos_master,
+          True)  # Necessary, see MESOS-3546.
 
     scheduler_driver.start()
 
